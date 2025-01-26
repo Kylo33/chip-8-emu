@@ -10,8 +10,8 @@
 
 #define INSTRUCTIONS_PER_FRAME 11
 
-constexpr unsigned int window_width { 2048 };
-constexpr unsigned int window_height { 1024 };
+constexpr unsigned int window_width { 1024 };
+constexpr unsigned int window_height { 512 };
 
 constexpr SDL_Color on_color {198, 43, 219, 255};
 constexpr SDL_Color off_color {0, 0, 0, 255};
@@ -127,7 +127,7 @@ SDL_AppResult SDL_AppIterate(void *app_state)
             for (int j = 0; j < DISPLAY_WIDTH; j++)
             {
                 SDL_Color color = ((row & cursor) != 0) ? on_color : off_color;
-                size_t starting_bit = (i * DISPLAY_WIDTH + j) * 3; 
+                size_t starting_bit = (i * DISPLAY_WIDTH + j) * 3;
                 pixels[starting_bit] = color.r;
                 pixels[starting_bit + 1] = color.g;
                 pixels[starting_bit + 2] = color.b;
@@ -144,7 +144,7 @@ SDL_AppResult SDL_AppIterate(void *app_state)
 
     // Temporary solution
     // Sleep for 16ms to hit 60fps
-    usleep(16000); 
+    usleep(16000);
 
     return SDL_APP_CONTINUE;
 }

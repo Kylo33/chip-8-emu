@@ -82,10 +82,11 @@ void Interpreter::execute()
             display_changed = true;
             uint8_t x = _registers[(instruction & 0x0F00) >> 8] % DISPLAY_WIDTH;
             uint8_t y = _registers[(instruction & 0x00F0) >> 4] % DISPLAY_HEIGHT;
+            uint8_t n = std::min(instruction & 0x000F, DISPLAY_HEIGHT - y);
 
             _registers[0xF] = 0;
 
-            for (uint8_t i = 0, n = instruction & 0x000F; i < n; i++)
+            for (int i = 0; i < n; i++)
             {
                 uint64_t sprite_row = _memory[_index + i];
                 
