@@ -13,9 +13,11 @@ set(BUILD_DIR ${CMAKE_SOURCE_DIR}/build)
 
 set(SRC_FILES
     ${SRC_DIR}/main.cpp
+    ${SRC_DIR}/interpreter.cpp
     )
 
 set(TARGET_NAME chip8emu)
+set(CMAKE_BUILD_TYPE Debug)
 
 add_executable(${TARGET_NAME} ${SRC_FILES})
 target_include_directories(${TARGET_NAME} PUBLIC ${INCLUDE_DIR})
