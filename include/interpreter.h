@@ -4,6 +4,7 @@
 #include <string>
 #include <cstdint>
 #include <stack>
+#include <bitset>
 
 #define MEMORY_SIZE 4096
 #define REGISTER_COUNT 16
@@ -15,7 +16,7 @@ class Interpreter
 {
 public:
     bool display_changed = true;
-    uint64_t screen[32] { 0 };
+    uint64_t screen[DISPLAY_HEIGHT] { 0 };
 
     bool load_rom(char *path);
     void execute();
@@ -26,6 +27,14 @@ public:
         {
             printf("%i : 0x%02X\n", i, _memory[i]);
         }
+    }
+
+    void print_screen() {
+        for (uint64_t row: screen)
+        {
+            std::cout << std::bitset<64>(row).to_string() << "\n";
+        }
+        std::cout << std::endl;
     }
 
     Interpreter();

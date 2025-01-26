@@ -3,7 +3,6 @@
 
 #include <string.h>
 #include <iostream>
-#include <bitset>
 
 #include "interpreter.h"
 
