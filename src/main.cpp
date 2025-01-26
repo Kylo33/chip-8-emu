@@ -6,11 +6,12 @@
 #include <iostream>
 
 #include "interpreter.h"
+#include <unistd.h>
 
-#define MEMORY_SIZE 4096
+#define INSTRUCTIONS_PER_FRAME 11
 
-constexpr unsigned int window_width = 1024;
-constexpr unsigned int window_height = 512;
+constexpr unsigned int window_width { 1024 };
+constexpr unsigned int window_height { 512 };
 
 struct AppContext {
     SDL_Window *window;
@@ -36,6 +37,8 @@ SDL_AppResult SDL_AppInit(void **app_state, int argc, char *argv[])
         SDL_Log("Error: unable to read file: '%s'\nUsage: ./chip8emu [ROM FILE]", argv[1]);
         return SDL_APP_FAILURE;
     }
+
+    // context->interpreter->print_memory();
     
     if (!SDL_Init(SDL_INIT_VIDEO))
     {
@@ -72,14 +75,23 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 
 SDL_AppResult SDL_AppIterate(void *app_state)
 {
-    SDL_Renderer *renderer = static_cast<AppContext*>(app_state)->renderer;
+    AppContext *context = static_cast<AppContext*>(app_state);
+    for(uint8_t i { 0 }; i < INSTRUCTIONS_PER_FRAME; i++)
+    {
+        context->interpreter->execute();
+    }
+
+    SDL_Renderer *renderer = context->renderer;
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(renderer);
     SDL_SetRenderDrawColor(renderer, SDL_MAX_UINT8, SDL_MAX_UINT8, SDL_MAX_UINT8, SDL_ALPHA_OPAQUE);
-    
 
     SDL_RenderPresent(renderer);
-    
+
+    // Temporary solution 
+    // Sleep for 16ms to hit 60fps
+    usleep(16000); 
+
     return SDL_APP_CONTINUE;
 }
 
