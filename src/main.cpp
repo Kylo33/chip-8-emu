@@ -9,6 +9,8 @@
 #include <unistd.h>
 
 #define INSTRUCTIONS_PER_FRAME 11
+#define OFF_COLOR 0, 0, 0
+#define ON_COLOR 0, 255, 0
 
 constexpr unsigned int window_width { 1024 };
 constexpr unsigned int window_height { 512 };
@@ -21,13 +23,13 @@ struct AppContext {
 
 SDL_AppResult SDL_AppInit(void **app_state, int argc, char *argv[])
 {
-    SDL_SetAppMetadata("Chip-8 Emulator", "1.0", "com.example.kylo.chip8emu");
-
     if (argc != 2)
     {
         SDL_Log("Usage: ./chip8emu [ROM FILE]");
         return SDL_APP_FAILURE;
     }
+
+    SDL_SetAppMetadata("Chip-8 Emulator", "1.0", "com.example.kylo.chip8emu");
 
     AppContext *context = new AppContext();
     *app_state = context;
@@ -80,15 +82,34 @@ SDL_AppResult SDL_AppIterate(void *app_state)
     {
         context->interpreter->execute();
     }
+    
+    if (context->interpreter->display_changed)
+    {
+        context->interpreter->display_changed = false;
 
-    SDL_Renderer *renderer = context->renderer;
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
-    SDL_RenderClear(renderer);
-    SDL_SetRenderDrawColor(renderer, SDL_MAX_UINT8, SDL_MAX_UINT8, SDL_MAX_UINT8, SDL_ALPHA_OPAQUE);
+        SDL_Renderer *renderer = context->renderer;
+        SDL_RenderClear(renderer);
 
-    SDL_RenderPresent(renderer);
+        SDL_Surface *surface = SDL_CreateSurface(64, 32, SDL_PIXELFORMAT_INDEX1MSB);
+        SDL_Palette *palette = SDL_CreateSurfacePalette(surface);
+        SDL_Color colors[2] = {{ OFF_COLOR, 255}, {ON_COLOR, 255}};
+        SDL_SetPaletteColors(palette, colors, 0, 2);
 
-    // Temporary solution 
+        for (int i = 0; i < 32; i++)
+        {
+            static_cast<uint64_t*>(surface->pixels)[i] = SDL_Swap64BE(context->interpreter->screen[i]);
+        }
+
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+        SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
+        SDL_RenderTexture(renderer, texture, NULL, NULL);
+        
+        SDL_RenderPresent(renderer);
+        SDL_DestroySurface(surface);
+    }
+
+    // Temporary solution
     // Sleep for 16ms to hit 60fps
     usleep(16000); 
 
@@ -97,5 +118,8 @@ SDL_AppResult SDL_AppIterate(void *app_state)
 
 void SDL_AppQuit(void *app_state, SDL_AppResult result)
 {
-    delete static_cast<AppContext*>(app_state)->interpreter;
+    if (app_state != NULL)
+    {
+        delete static_cast<AppContext*>(app_state)->interpreter;
+    }
 }

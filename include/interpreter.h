@@ -14,6 +14,9 @@
 class Interpreter
 {
 public:
+    bool display_changed = true;
+    uint64_t screen[32] { 0 };
+
     bool load_rom(char *path);
     void execute();
 
@@ -28,7 +31,6 @@ public:
     Interpreter();
 
 private:
-    uint64_t _screen[32] { 0 }; 
     uint16_t _pc { 0x200 };
     uint16_t _index;
     uint8_t _registers[REGISTER_COUNT];

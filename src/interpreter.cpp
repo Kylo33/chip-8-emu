@@ -1,9 +1,11 @@
 #include <fstream>
 #include <cstdint>
 
-#include "interpreter.h"
 #include <string.h>
 #include <iostream>
+#include <bitset>
+
+#include "interpreter.h"
 
 constexpr uint8_t font[] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -59,32 +61,28 @@ void Interpreter::execute()
         case 0x0000: // 0x00E0 => clear the screen
             for (uint8_t i = 0; i < 32; i++)
             {
-                _screen[i] = 0;
+                screen[i] = 0;
             }
             break;
         case 0x1000: // 0x1NNN => jump
             _pc = instruction & 0x0FFF;
-
-            // TEMPORARY
-            for (int i = 0; i < 32; i++)
-            {
-                std::cout << _screen[i] << std::endl;
-            }
-            exit(0);
-
             break;
         case 0x6000: // 0x6XNN => set register VX to NN
-            _registers[instruction & 0x0F00] = instruction & 0x00FF;
+            _registers[(instruction & 0x0F00) >> 8] = instruction & 0x00FF;
             break;
         case 0x7000: // 0x7XNN => increment register VX by NN
-            _registers[instruction & 0x0F00] += instruction & 0x00FF;
+            _registers[(instruction & 0x0F00) >> 8] += instruction & 0x00FF;
             break;
         case 0xA000: // 0xANNN => set index register to NNN
             _index = instruction & 0x0FFF;
             break;
+        case 0xC000: // 0xCXNN => set VX to rand binary and NN
+            _registers[(instruction & 0x0F00) >> 8] = instruction & 0x00FF & rand();
+            break;
         case 0xD000: // 0xDXYN => draw
-            uint8_t x = _registers[instruction & 0x0F00] % DISPLAY_WIDTH;
-            uint8_t y = _registers[instruction & 0x00F0] % DISPLAY_HEIGHT;
+            display_changed = true;
+            uint8_t x = _registers[(instruction & 0x0F00) >> 8] % DISPLAY_WIDTH;
+            uint8_t y = _registers[(instruction & 0x00F0) >> 4] % DISPLAY_HEIGHT;
 
             _registers[0xF] = 0;
 
@@ -92,15 +90,24 @@ void Interpreter::execute()
             {
                 uint64_t sprite_row = _memory[_index + i];
                 
-                // Make sure this works for sprites that go off the screen
-                sprite_row <<= DISPLAY_WIDTH - x - 8;
+                int shift_left_by = DISPLAY_WIDTH - x - 8;
 
-                if (_screen[y + i] & sprite_row != 0)
+                // Make sure this works for sprites that go off the screen
+                if (shift_left_by >= 0)
+                {
+                    sprite_row <<= shift_left_by;
+                }
+                else
+                {
+                    sprite_row >>= -shift_left_by;
+                }
+
+                if (screen[y + i] & sprite_row != 0)
                 {
                     _registers[0xF] = 1;
                 }
                 
-                _screen[y + i] |= sprite_row;
+                screen[y + i] |= sprite_row;
             }
 
             break;
