@@ -90,8 +90,6 @@ void Interpreter::execute()
                 uint64_t sprite_row = _memory[_index + i];
                 
                 int shift_left_by = DISPLAY_WIDTH - x - 8;
-
-                // Make sure this works for sprites that go off the screen
                 if (shift_left_by >= 0)
                 {
                     sprite_row <<= shift_left_by;
@@ -101,12 +99,12 @@ void Interpreter::execute()
                     sprite_row >>= -shift_left_by;
                 }
 
-                if (screen[y + i] & sprite_row != 0)
+                if ((screen[y + i] & sprite_row) != 0)
                 {
                     _registers[0xF] = 1;
                 }
                 
-                screen[y + i] |= sprite_row;
+                screen[y + i] ^= sprite_row;
             }
 
             break;

@@ -118,25 +118,25 @@ SDL_AppResult SDL_AppIterate(void *app_state)
         uint8_t *pixels;
         int pitch;
 
-            SDL_LockTexture(context->texture, NULL, (void**) &pixels, &pitch);
+        SDL_LockTexture(context->texture, NULL, (void**) &pixels, &pitch);
 
-            for (int i = 0; i < DISPLAY_HEIGHT; i++)
+        for (int i = 0; i < DISPLAY_HEIGHT; i++)
+        {
+            uint64_t row = context->interpreter->screen[i];
+            uint64_t cursor = 1ULL << 63;
+            for (int j = 0; j < DISPLAY_WIDTH; j++)
             {
-                uint64_t row = context->interpreter->screen[i];
-                uint64_t cursor = 1ULL << 63;
-                for (int j = 0; j < DISPLAY_WIDTH; j++)
-                {
-                    SDL_Color color = ((row & cursor) != 0) ? on_color : off_color;
-                    size_t starting_bit = (i * DISPLAY_WIDTH + j) * 3; 
-                    pixels[starting_bit] = color.r;
-                    pixels[starting_bit + 1] = color.g;
-                    pixels[starting_bit + 2] = color.b;
+                SDL_Color color = ((row & cursor) != 0) ? on_color : off_color;
+                size_t starting_bit = (i * DISPLAY_WIDTH + j) * 3; 
+                pixels[starting_bit] = color.r;
+                pixels[starting_bit + 1] = color.g;
+                pixels[starting_bit + 2] = color.b;
 
-                    cursor >>= 1;
-                }
+                cursor >>= 1;
             }
+        }
 
-            SDL_UnlockTexture(context->texture);
+        SDL_UnlockTexture(context->texture);
         
         SDL_RenderTexture(context->renderer, context->texture, NULL, NULL);
         SDL_RenderPresent(context->renderer);
