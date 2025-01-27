@@ -57,13 +57,27 @@ void Interpreter::execute()
     _pc += 2;
 
     switch (instruction & 0xF000) {
-        case 0x0000: // 0x00E0 => clear the screen
-            for (uint8_t i = 0; i < 32; i++)
+        case 0x0000:
             {
-                screen[i] = 0;
+                switch (instruction & 0x00FF) {
+                    case 0x00E0: // 0x00E0 => clear the screen
+                        for (uint8_t i = 0; i < 32; i++)
+                        {
+                            screen[i] = 0;
+                        }
+                        break;
+                    case 0x0EE: // 0x00EE => return from subroutine
+                        _pc = _substack.top();
+                        _substack.pop();
+                        break;
+                }
             }
             break;
         case 0x1000: // 0x1NNN => jump
+            _pc = instruction & 0x0FFF;
+            break;
+        case 0x2000: // 0x2NNN => call subroutine at NNN
+            _substack.push(_pc);
             _pc = instruction & 0x0FFF;
             break;
         case 0x3000: // 3XNN => PC +=2 if VX == NN
@@ -133,6 +147,10 @@ void Interpreter::execute()
             break;
         case 0xA000: // 0xANNN => set index register to NNN
             _index = instruction & 0x0FFF;
+            break;
+        case 0xB000: // 0xBNNN => jump to NNN + V0
+            // This should be configurable as BXNN for CHIP-48 and SUPER-CHIP
+            _pc = (instruction & 0x0FFF) + _registers[0];
             break;
         case 0xC000: // 0xCXNN => set VX to rand binary and NN
             _registers[(instruction & 0x0F00) >> 8] = instruction & 0x00FF & rand();
