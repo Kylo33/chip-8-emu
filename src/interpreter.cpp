@@ -122,24 +122,39 @@ void Interpreter::execute()
                     _registers[x] = _registers[x] ^ _registers[y];
                     break;
                 case 0x0004: // 8XY4 => set VX to VX + VY
-                    _registers[0xF] = ((int) _registers[x] + (int) _registers[y]) > 255;
-                    _registers[x] = _registers[x] + _registers[y];
+                    {
+                        uint8_t flag = ((int) _registers[x] + (int) _registers[y]) > 255;
+                        _registers[x] = _registers[x] + _registers[y];
+                        _registers[0xF] = flag;
+                    }
                     break;
                 case 0x0005: // 8XY5 => set VX to VX - VY
-                    _registers[0xF] = _registers[x] > _registers[y];
-                    _registers[x] = _registers[x] - _registers[y];
+                    {
+                        uint8_t flag = _registers[x] >= _registers[y];
+                        _registers[x] = _registers[x] - _registers[y];
+                        _registers[0xF] = flag;
+                    }
                     break;
                 case 0x0006: // 8XY6 => (maybe set VX to VY) VX >> 1
-                    _registers[0xF] = _registers[x] & 0b1;
-                    _registers[x] >>= 1;
+                    {
+                        uint8_t flag = _registers[x] & 0b1;
+                        _registers[x] >>= 1;
+                        _registers[0xF] = flag;
+                    }
                     break;
                 case 0x0007: // 8XY7 => set VX to VY - VX
-                    _registers[0xF] = _registers[y] > _registers[x];
-                    _registers[x] = _registers[y] - _registers[x];
+                    {
+                        uint8_t flag = _registers[y] >= _registers[x];
+                        _registers[x] = _registers[y] - _registers[x];
+                        _registers[0xF] = flag;
+                    }
                     break;
                 case 0x000E: // 8XYE => (maybe set VX to VY) VX << 1
-                    _registers[0xF] = _registers[x] & (0b1 << 7);
-                    _registers[x] <<= 1;
+                    {
+                        uint8_t flag = (_registers[x] & (0b1 << 7)) >> 7;
+                        _registers[x] <<= 1;
+                        _registers[0xF] = flag;
+                    }
                     break;
                 }
             }
