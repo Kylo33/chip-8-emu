@@ -122,18 +122,23 @@ void Interpreter::execute()
                     _registers[x] = _registers[x] ^ _registers[y];
                     break;
                 case 0x0004: // 8XY4 => set VX to VX + VY
+                    _registers[0xF] = ((int) _registers[x] + (int) _registers[y]) > 255;
                     _registers[x] = _registers[x] + _registers[y];
                     break;
                 case 0x0005: // 8XY5 => set VX to VX - VY
+                    _registers[0xF] = _registers[x] > _registers[y];
                     _registers[x] = _registers[x] - _registers[y];
                     break;
                 case 0x0006: // 8XY6 => (maybe set VX to VY) VX >> 1
+                    _registers[0xF] = _registers[x] & 0b1;
                     _registers[x] >>= 1;
                     break;
                 case 0x0007: // 8XY7 => set VX to VY - VX
+                    _registers[0xF] = _registers[y] > _registers[x];
                     _registers[x] = _registers[y] - _registers[x];
                     break;
                 case 0x000E: // 8XYE => (maybe set VX to VY) VX << 1
+                    _registers[0xF] = _registers[x] & (0b1 << 7);
                     _registers[x] <<= 1;
                     break;
                 }
@@ -223,9 +228,34 @@ void Interpreter::execute()
                         }
                         _pc -= 2;
                         break;
+                    case 0x001E: // FX1E => Add VX to Index
+                        _index += _registers[(instruction & 0x0F00) >> 8];
+                        break;
                     case 0x0029: // FX29 => set the index to the font character for the value in vx
-                        uint8_t x = _registers[(instruction & 0x0F00) >> 8] & 0x000F;
-                        _index = (5 * x) + 0x050;
+                        {
+                            uint8_t x = _registers[(instruction & 0x0F00) >> 8] & 0x000F;
+                            _index = (5 * x) + 0x050;
+                        }
+                        break;
+                    case 0x0033: // FX33 => Binary-coded decimal conversion
+                        {
+                            uint8_t x = _registers[(instruction & 0x0F00) >> 8];
+                            _memory[_index] = x / 100;
+                            _memory[_index + 1] = (x / 10) % 10;
+                            _memory[_index + 2] = x % 10;
+                        }
+                        break;
+                    case 0x0055:
+                        for (int i = 0, x = (instruction & 0x0F00) >> 8; i <= x; i++)
+                        {
+                            _memory[_index + i] = _registers[i];
+                        }
+                        break;
+                    case 0x0065:
+                        for (int i = 0, x = (instruction & 0x0F00) >> 8; i <= x; i++)
+                        {
+                            _registers[i] = _memory[_index + i];
+                        }
                         break;
                 }
             }
