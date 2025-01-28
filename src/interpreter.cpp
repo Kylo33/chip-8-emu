@@ -156,35 +156,79 @@ void Interpreter::execute()
             _registers[(instruction & 0x0F00) >> 8] = instruction & 0x00FF & rand();
             break;
         case 0xD000: // 0xDXYN => draw
-            display_changed = true;
-            uint8_t x = _registers[(instruction & 0x0F00) >> 8] % DISPLAY_WIDTH;
-            uint8_t y = _registers[(instruction & 0x00F0) >> 4] % DISPLAY_HEIGHT;
-            uint8_t n = std::min(instruction & 0x000F, DISPLAY_HEIGHT - y);
-
-            _registers[0xF] = 0;
-
-            for (int i = 0; i < n; i++)
             {
-                uint64_t sprite_row = _memory[_index + i];
-                
-                int shift_left_by = DISPLAY_WIDTH - x - 8;
-                if (shift_left_by >= 0)
-                {
-                    sprite_row <<= shift_left_by;
-                }
-                else
-                {
-                    sprite_row >>= -shift_left_by;
-                }
+                display_changed = true;
+                uint8_t x = _registers[(instruction & 0x0F00) >> 8] % DISPLAY_WIDTH;
+                uint8_t y = _registers[(instruction & 0x00F0) >> 4] % DISPLAY_HEIGHT;
+                uint8_t n = std::min(instruction & 0x000F, DISPLAY_HEIGHT - y);
 
-                if ((screen[y + i] & sprite_row) != 0)
+                _registers[0xF] = 0;
+
+                for (int i = 0; i < n; i++)
                 {
-                    _registers[0xF] = 1;
+                    uint64_t sprite_row = _memory[_index + i];
+                    
+                    int shift_left_by = DISPLAY_WIDTH - x - 8;
+                    if (shift_left_by >= 0)
+                    {
+                        sprite_row <<= shift_left_by;
+                    }
+                    else
+                    {
+                        sprite_row >>= -shift_left_by;
+                    }
+
+                    if ((screen[y + i] & sprite_row) != 0)
+                    {
+                        _registers[0xF] = 1;
+                    }
+                    
+                    screen[y + i] ^= sprite_row;
                 }
-                
-                screen[y + i] ^= sprite_row;
             }
 
+            break;
+        case 0xE000:
+            {
+                uint8_t vx_val = _registers[(instruction & 0x0F00) >> 8];
+                switch (instruction & 0x00FF) {
+                    case 0x009E: // Skip an instruction if key equal to value in VX is pressed
+                        if (keyboard.is_pressed(vx_val));
+                        {
+                            _pc += 2;
+                        }
+                        break;
+                    case 0x00A1: // Skip an instruction if key equal to value in VX isn't pressed
+                        if (! keyboard.is_pressed(vx_val));
+                        {
+                            _pc += 2;
+                        }
+                        break;
+                }
+            }
+            break;
+        case 0xF000:
+            {
+                switch (instruction & 0x00FF)
+                {
+                    case 0x000A: // FX0A => Decrement PC unless a key is released, then put that key in VX
+                        for (int i = 0; i < 16; i++)
+                        {
+                            if (keyboard.old_state[Keyboard::keymap[i]] && ! keyboard.state[Keyboard::keymap[i]])
+                            {
+                                _registers[(instruction && 0x0F00) >> 8] = i;
+                                break;
+                            }
+                        }
+                        _pc -= 2;
+                        break;
+                    case 0x0029: // FX29 => set the index to the font character for the value in vx
+                        uint8_t x = _registers[(instruction & 0x0F00) >> 8] & 0x000F;
+                        _index = (5 * x) + 0x050;
+                        std::cout << _index << std::endl;
+                        break;
+                }
+            }
             break;
     }
 }

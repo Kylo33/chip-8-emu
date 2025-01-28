@@ -4,6 +4,7 @@
 #include <array>
 #include <fstream>
 #include <iostream>
+#include <unordered_map>
 
 #include "interpreter.h"
 #include <unistd.h>
@@ -86,19 +87,24 @@ SDL_AppResult SDL_AppInit(void **app_state, int argc, char *argv[])
     return SDL_APP_CONTINUE;
 }
 
-SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
+SDL_AppResult SDL_AppEvent(void *app_state, SDL_Event *event)
 {
-    if (event->type == SDL_EVENT_QUIT)
-    {
-        return SDL_APP_SUCCESS;
+    switch (event->type) {
+        case SDL_EVENT_QUIT:
+            return SDL_APP_SUCCESS;
     }
 
     return SDL_APP_CONTINUE;
+
 }
 
 SDL_AppResult SDL_AppIterate(void *app_state)
 {
     AppContext *context = static_cast<AppContext*>(app_state);
+
+    context->interpreter->keyboard.old_state = context->interpreter->keyboard.state;
+    context->interpreter->keyboard.state = SDL_GetKeyboardState(NULL);
+
     for(uint8_t i { 0 }; i < INSTRUCTIONS_PER_FRAME; i++)
     {
         context->interpreter->execute();
