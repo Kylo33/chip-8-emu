@@ -8,6 +8,17 @@ bool Keyboard::is_pressed(uint8_t key)
     return state[Keyboard::keymap[key]];
 }
 
+void Keyboard::save_state()
+{
+    memcpy(old_state, state, 16);
+
+    const bool *sdl_state = SDL_GetKeyboardState(NULL);
+    for (int i = 0; i < 16; i++)
+    {
+        state[i] = sdl_state[Keyboard::keymap[i]];
+    }
+}
+
 const uint8_t Keyboard::keymap[] = {
     SDL_SCANCODE_X,
     SDL_SCANCODE_1,

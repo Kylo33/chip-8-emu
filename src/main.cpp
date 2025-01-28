@@ -101,9 +101,7 @@ SDL_AppResult SDL_AppEvent(void *app_state, SDL_Event *event)
 SDL_AppResult SDL_AppIterate(void *app_state)
 {
     AppContext *context = static_cast<AppContext*>(app_state);
-
-    context->interpreter->keyboard.old_state = context->interpreter->keyboard.state;
-    context->interpreter->keyboard.state = SDL_GetKeyboardState(NULL);
+    context->interpreter->keyboard.save_state();
 
     for(uint8_t i { 0 }; i < INSTRUCTIONS_PER_FRAME; i++)
     {

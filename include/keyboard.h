@@ -11,9 +11,11 @@ class Keyboard
 {
 public:
     bool is_pressed(uint8_t key);
-    const bool *state = SDL_GetKeyboardState(NULL);
-    const bool *old_state = SDL_GetKeyboardState(NULL);
-    static const uint8_t keymap[];
+    void save_state();
+
+    bool state[16];
+    bool old_state[16];
+    static const uint8_t keymap[16];
 };
 
 #endif

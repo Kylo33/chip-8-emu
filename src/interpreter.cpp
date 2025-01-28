@@ -191,15 +191,16 @@ void Interpreter::execute()
         case 0xE000:
             {
                 uint8_t vx_val = _registers[(instruction & 0x0F00) >> 8];
+                bool is_pressed = keyboard.is_pressed(vx_val);
                 switch (instruction & 0x00FF) {
                     case 0x009E: // Skip an instruction if key equal to value in VX is pressed
-                        if (keyboard.is_pressed(vx_val));
+                        if (is_pressed)
                         {
                             _pc += 2;
                         }
                         break;
                     case 0x00A1: // Skip an instruction if key equal to value in VX isn't pressed
-                        if (! keyboard.is_pressed(vx_val));
+                        if (! is_pressed)
                         {
                             _pc += 2;
                         }
@@ -211,13 +212,13 @@ void Interpreter::execute()
             {
                 switch (instruction & 0x00FF)
                 {
-                    case 0x000A: // FX0A => Decrement PC unless a key is released, then put that key in VX
+                    case 0x000A: // FX0A => Decrement PC until a key is released, then put that key in VX
                         for (int i = 0; i < 16; i++)
                         {
-                            if (keyboard.old_state[Keyboard::keymap[i]] && ! keyboard.state[Keyboard::keymap[i]])
+                            if (keyboard.old_state[i] && ! keyboard.state[i])
                             {
-                                _registers[(instruction && 0x0F00) >> 8] = i;
-                                break;
+                                _registers[(instruction & 0x0F00) >> 8] = i;
+                                return;
                             }
                         }
                         _pc -= 2;
@@ -225,7 +226,6 @@ void Interpreter::execute()
                     case 0x0029: // FX29 => set the index to the font character for the value in vx
                         uint8_t x = _registers[(instruction & 0x0F00) >> 8] & 0x000F;
                         _index = (5 * x) + 0x050;
-                        std::cout << _index << std::endl;
                         break;
                 }
             }
