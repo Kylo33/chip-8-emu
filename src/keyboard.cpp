@@ -5,7 +5,7 @@
 
 bool Keyboard::is_pressed(uint8_t key)
 {
-    return state[Keyboard::keymap[key]];
+    return state[key];
 }
 
 void Keyboard::save_state()

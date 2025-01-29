@@ -30,6 +30,12 @@ Interpreter::Interpreter()
     memcpy(_memory + 0x050, font, 80);
 }
 
+void Interpreter::tick_timers()
+{
+    _delay.decrement();
+    _sound.decrement();
+}
+
 bool Interpreter::load_rom(char *path)
 {
     std::ifstream byte_stream(path);
@@ -48,6 +54,7 @@ bool Interpreter::load_rom(char *path)
     }
 
     byte_stream.close();
+
     return true;
 }
 
@@ -69,6 +76,9 @@ void Interpreter::execute()
                     case 0x0EE: // 0x00EE => return from subroutine
                         _pc = _substack.top();
                         _substack.pop();
+                        break;
+                    default:
+                        printf("Unknown instruction: %04X\n", instruction);
                         break;
                 }
             }
@@ -109,53 +119,56 @@ void Interpreter::execute()
                 uint8_t x = (instruction & 0x0F00) >> 8;
                 uint8_t y = (instruction & 0x00F0) >> 4;
                 switch (instruction & 0x000F) {
-                case 0x0000: // 8XY0 => set the value of VX to the value of VY 
-                    _registers[x] = _registers[y];
-                    break;
-                case 0x0001: // 8XY1 => set VX to VX binary or VY
-                    _registers[x] = _registers[x] | _registers[y];
-                    break;
-                case 0x0002: // 8XY2 => set VX to VX binary and VY
-                    _registers[x] = _registers[x] & _registers[y];
-                    break;
-                case 0x0003: // 8XY3 => set VX to VX binary xor VY
-                    _registers[x] = _registers[x] ^ _registers[y];
-                    break;
-                case 0x0004: // 8XY4 => set VX to VX + VY
-                    {
-                        uint8_t flag = ((int) _registers[x] + (int) _registers[y]) > 255;
-                        _registers[x] = _registers[x] + _registers[y];
-                        _registers[0xF] = flag;
-                    }
-                    break;
-                case 0x0005: // 8XY5 => set VX to VX - VY
-                    {
-                        uint8_t flag = _registers[x] >= _registers[y];
-                        _registers[x] = _registers[x] - _registers[y];
-                        _registers[0xF] = flag;
-                    }
-                    break;
-                case 0x0006: // 8XY6 => (maybe set VX to VY) VX >> 1
-                    {
-                        uint8_t flag = _registers[x] & 0b1;
-                        _registers[x] >>= 1;
-                        _registers[0xF] = flag;
-                    }
-                    break;
-                case 0x0007: // 8XY7 => set VX to VY - VX
-                    {
-                        uint8_t flag = _registers[y] >= _registers[x];
-                        _registers[x] = _registers[y] - _registers[x];
-                        _registers[0xF] = flag;
-                    }
-                    break;
-                case 0x000E: // 8XYE => (maybe set VX to VY) VX << 1
-                    {
-                        uint8_t flag = (_registers[x] & (0b1 << 7)) >> 7;
-                        _registers[x] <<= 1;
-                        _registers[0xF] = flag;
-                    }
-                    break;
+                    case 0x0000: // 8XY0 => set the value of VX to the value of VY 
+                        _registers[x] = _registers[y];
+                        break;
+                    case 0x0001: // 8XY1 => set VX to VX binary or VY
+                        _registers[x] = _registers[x] | _registers[y];
+                        break;
+                    case 0x0002: // 8XY2 => set VX to VX binary and VY
+                        _registers[x] = _registers[x] & _registers[y];
+                        break;
+                    case 0x0003: // 8XY3 => set VX to VX binary xor VY
+                        _registers[x] = _registers[x] ^ _registers[y];
+                        break;
+                    case 0x0004: // 8XY4 => set VX to VX + VY
+                        {
+                            uint8_t flag = ((int) _registers[x] + (int) _registers[y]) > 255;
+                            _registers[x] = _registers[x] + _registers[y];
+                            _registers[0xF] = flag;
+                        }
+                        break;
+                    case 0x0005: // 8XY5 => set VX to VX - VY
+                        {
+                            uint8_t flag = _registers[x] >= _registers[y];
+                            _registers[x] = _registers[x] - _registers[y];
+                            _registers[0xF] = flag;
+                        }
+                        break;
+                    case 0x0006: // 8XY6 => (maybe set VX to VY) VX >> 1
+                        {
+                            uint8_t flag = _registers[x] & 0b1;
+                            _registers[x] >>= 1;
+                            _registers[0xF] = flag;
+                        }
+                        break;
+                    case 0x0007: // 8XY7 => set VX to VY - VX
+                        {
+                            uint8_t flag = _registers[y] >= _registers[x];
+                            _registers[x] = _registers[y] - _registers[x];
+                            _registers[0xF] = flag;
+                        }
+                        break;
+                    case 0x000E: // 8XYE => (maybe set VX to VY) VX << 1
+                        {
+                            uint8_t flag = (_registers[x] & (0b1 << 7)) >> 7;
+                            _registers[x] <<= 1;
+                            _registers[0xF] = flag;
+                        }
+                        break;
+                    default:
+                        printf("Unknown instruction: %04X\n", instruction);
+                        break;
                 }
             }
             break;
@@ -225,6 +238,9 @@ void Interpreter::execute()
                             _pc += 2;
                         }
                         break;
+                    default:
+                        printf("Unknown instruction: %04X\n", instruction);
+                        break;
                 }
             }
             break;
@@ -232,6 +248,9 @@ void Interpreter::execute()
             {
                 switch (instruction & 0x00FF)
                 {
+                    case 0x0007: // FX07 => sets VX to the current value of the delay timer
+                        _registers[(instruction & 0x0F00) >> 8] = _delay.value;
+                        break;
                     case 0x000A: // FX0A => Decrement PC until a key is released, then put that key in VX
                         for (int i = 0; i < 16; i++)
                         {
@@ -242,6 +261,12 @@ void Interpreter::execute()
                             }
                         }
                         _pc -= 2;
+                        break;
+                    case 0x0015: // FX15 => sets the delay timer to the value in VX
+                        _delay.value = _registers[(instruction & 0x0F00) >> 8];
+                        break;
+                    case 0x0018: // FX15 => sets the sound timer to the value in VX
+                        _sound.value = _registers[(instruction & 0x0F00) >> 8];
                         break;
                     case 0x001E: // FX1E => Add VX to Index
                         _index += _registers[(instruction & 0x0F00) >> 8];
@@ -272,8 +297,14 @@ void Interpreter::execute()
                             _registers[i] = _memory[_index + i];
                         }
                         break;
+                    default:
+                        printf("Unknown instruction: %04X\n", instruction);
+                        break;
                 }
             }
+            break;
+        default:
+            printf("Unknown instruction: %04X\n", instruction);
             break;
     }
 }

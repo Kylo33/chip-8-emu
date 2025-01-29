@@ -102,6 +102,7 @@ SDL_AppResult SDL_AppIterate(void *app_state)
 {
     AppContext *context = static_cast<AppContext*>(app_state);
     context->interpreter->keyboard.save_state();
+    context->interpreter->tick_timers();
 
     for(uint8_t i { 0 }; i < INSTRUCTIONS_PER_FRAME; i++)
     {
@@ -112,7 +113,7 @@ SDL_AppResult SDL_AppIterate(void *app_state)
     if (context->frame_count % 120 == 0)
     {
         double seconds = SDL_GetTicks() / (double) 1000;
-        std::cout << context->frame_count / seconds << std::endl;
+        // std::cout << context->frame_count / seconds << std::endl;
     }
     
     if (context->interpreter->display_changed)

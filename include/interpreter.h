@@ -7,6 +7,7 @@
 #include <bitset>
 #include <unordered_set>
 #include "keyboard.h"
+#include "timer.h"
 
 #define MEMORY_SIZE 4096
 #define REGISTER_COUNT 16
@@ -22,10 +23,8 @@ public:
     Keyboard keyboard = Keyboard();
 
     bool load_rom(char *path);
+    void tick_timers();
     void execute();
-
-    void press(uint8_t key) { std::cout << "pressed " << key << std::endl; }
-    void release(uint8_t key) { std::cout << "released " << key << std::endl; }
 
     // Temporary, for debugging
     void print_memory() {
@@ -49,6 +48,8 @@ private:
     uint16_t _index;
     uint8_t _registers[REGISTER_COUNT];
     uint8_t _memory[MEMORY_SIZE] { 0 };
+    Timer _delay { false };
+    Timer _sound { true };
     std::stack<uint16_t> _substack;
 };
 
